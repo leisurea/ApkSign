@@ -5,20 +5,6 @@
         "alikeys":"别名",
         "keyStorePas":"密钥",
         "alikeysPas":"别名密码"
-    },
-    {
-        "signApk": "/Users/leisure/desktop/",
-        "jks": "/Users/leisure/desktop/zyf.jks",
-        "alikeys":"zyf",
-        "keyStorePas":"easypay1024",
-        "alikeysPas":"easypay1024"
-    },
-    {
-        "signApk": "C:\\User\\output",
-        "jks": "C:\\User\\aaa.jks",
-        "alikeys":"alikeys",
-        "keyStorePas":"08DAHGHKJHJUGBGYHJJVHVHVNVNV",
-        "alikeysPas":"DRFTVG7FYBJBJ9XRCVHFGCHGMIOOQ"
     }
 
 ]
