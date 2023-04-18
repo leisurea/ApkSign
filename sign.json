@@ -1,10 +1,17 @@
 [
     {
-        "signApk": "签名后apk的文件夹的绝对路径",
-        "jks": "jks的绝对路径",
-        "alikeys":"别名",
-        "keyStorePas":"密钥",
-        "alikeysPas":"别名密码"
+        "signApk": "/Users/zhangsan/desktop/",
+        "jks": "/Users/zhangsan/desktop/abc.jks",
+        "alikeys":"abc",
+        "keyStorePas":"abcdefg",
+        "alikeysPas":"abcdefg"
+    },
+    {
+        "signApk": "C:\\User\\output",
+        "jks": "C:\\User\\aaa.jks",
+        "alikeys":"alikeys",
+        "keyStorePas":"08DAHGHKJHJUGBGYHJJVHVHVNVNV",
+        "alikeysPas":"DRFTVG7FYBJBJ9XRCVHFGCHGMIOOQ"
     }
 
 ]

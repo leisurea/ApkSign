@@ -23,6 +23,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.filechooser.FileFilter;
+import javax.swing.filechooser.FileSystemView;
 import javax.swing.text.JTextComponent;
 
 public class Sign extends JFrame {
@@ -37,6 +38,8 @@ public class Sign extends JFrame {
     private JTextArea jtLogcat;
     private String profitFileName = "sign.json";
     private File directory = new File(".");
+    //    private String output = "output" + File.separator;
+    private String output = "";//不设置单独输出文件夹
 
     /**
      * 读取本地配置文件
@@ -92,15 +95,18 @@ public class Sign extends JFrame {
         constraints.gridwidth = GridBagConstraints.REMAINDER; //结束行
         JButton signerB = new JButton("选择");
         signerB.addActionListener(e -> {
-            fc.setCurrentDirectory(new java.io.File("user.home"));
-            fc.setDialogTitle("选择任一apksigner目录");
+//            fc.setCurrentDirectory(FileSystemView.getFileSystemView().getHomeDirectory());
+            fc.setCurrentDirectory(new File("."));//默认为当前文件夹
+            fc.setDialogTitle("选择任一apksigner所在目录");
 //            fc.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+//            fc.setFileHidingEnabled(true);//显示隐藏
             fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+//            fc.setFileSystemView(FileSystemView.getFileSystemView());
+            //打开文件选择器，现成阻塞，直到选择框被关闭
             if (fc.showOpenDialog(signerB) == JFileChooser.APPROVE_OPTION) {
 //                JOptionPane.showMessageDialog(null, fc.getSelectedFile().getAbsolutePath());
                 String csv = fc.getSelectedFile().getAbsolutePath();
                 apksignerT.setText(csv);
-//                jtLogcat.append(csv + "\n");
             }
         });
         gbaglayout.setConstraints(signerB, constraints);
@@ -119,7 +125,8 @@ public class Sign extends JFrame {
         constraints.weightx = 0.0; //恢复默认值
         JButton unSignApkB = new JButton("选择");
         unSignApkB.addActionListener(e -> {
-            fc.setCurrentDirectory(new java.io.File("user.home"));
+//            fc.setCurrentDirectory(FileSystemView.getFileSystemView().getHomeDirectory());
+            fc.setCurrentDirectory(new File("."));//默认为当前文件夹
             fc.setDialogTitle("选择未签名apk");
 //            fc.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
             fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
@@ -135,10 +142,8 @@ public class Sign extends JFrame {
                 }
             });
             if (fc.showOpenDialog(unSignApkB) == JFileChooser.APPROVE_OPTION) {
-//                JOptionPane.showMessageDialog(null, fc.getSelectedFile().getAbsolutePath());
                 String csv = fc.getSelectedFile().getAbsolutePath();
                 unSignApkT.setText(csv);
-//                jtLogcat.append(csv + "\n");
             }
         });
         unSignApkB.addActionListener(e -> {
@@ -267,6 +272,9 @@ public class Sign extends JFrame {
                 JOptionPane.showMessageDialog(null, "apksigner路径为空");
                 return;
             }
+            if (!apksignerPath.endsWith("\\") && !apksignerPath.endsWith("/")) {
+                apksignerPath += File.separator;
+            }
             String unSignApkPath = unSignApkT.getText().trim();
             if (Tools.isEmpty(unSignApkPath)) {
                 JOptionPane.showMessageDialog(null, "未签名apk路径为空");
@@ -304,12 +312,13 @@ public class Sign extends JFrame {
                 JOptionPane.showMessageDialog(null, "别名密码为空");
                 return;
             }
-            String output_dir = signedApkPath + (signedApkPath.endsWith("/") ? "" : File.separator) + "output" + File.separator;
+            String output_dir = signedApkPath + (signedApkPath.endsWith("/") || signedApkPath.endsWith("\\") ? "" : File.separator) + output;
 
             String target_apk = signedApkPath + File.separator + sufFix;
             String zipalign_apk = output_dir + preFix + "_zipalign" + sufFix;
             String signer_apk = output_dir + preFix + "_signer" + sufFix;
 
+//            System.getProperty("os.name")
             String cmd_zipalign = "";
             String cmd_signer = "";
 //            # 拼装签名命令-如果您使用的是 apksigner，则必须在为 APK 文件签名之前使用 zipalign。如果您在使用 apksigner 为 APK 签名之后对 APK 做出了进一步更改，签名便会失效。
@@ -323,32 +332,37 @@ public class Sign extends JFrame {
 
 //            jtLogcat.append(Tools.exec(cmd_zipalign, cmd_signer));
 
-            ExecResult result = Tools.runShell(cmd_zipalign);
-            if (0 == result.state) {
-                jtLogcat.append("zipalign 对齐成功 \n");
-            } else {
-                jtLogcat.append(result.logcat + "\n");
-                return;
-            }
-            result = Tools.runShell(cmd_signer);
-            if (0 == result.state) {
-                jtLogcat.append("apksigner sign成功 \n");
-            } else {
-                jtLogcat.append(result.logcat + "\n");
-                return;
-            }
-            result = Tools.runShell(cmd_verify);
-            if (0 == result.state) {
-                jtLogcat.append("apksigner verify成功 \n");
-                jtLogcat.append(result.logcat + "\n");
-            } else {
-                jtLogcat.append(result.logcat + "\n");
-                return;
-            }
-            //删除对齐文件
-            Tools.deleteFile(zipalign_apk);
-            //删除V3文件
-            Tools.deleteFile(signer_apk + ".idsig");
+
+            //MacOS可以同步执行，win执行卡死
+//            onExecCmd(cmd_zipalign, cmd_signer, cmd_verify, zipalign_apk, signer_apk);
+            onExecCmdAsync(cmd_zipalign, cmd_signer, cmd_verify, zipalign_apk, signer_apk);
+
+//            ExecResult result = Tools.runShell(cmd_zipalign);
+//            if (0 == result.state) {
+//                jtLogcat.append("zipalign 对齐成功 \n");
+//            } else {
+//                jtLogcat.append(result.logcat + "\n");
+//                return;
+//            }
+//            result = Tools.runShell(cmd_signer);
+//            if (0 == result.state) {
+//                jtLogcat.append("apksigner sign成功 \n");
+//            } else {
+//                jtLogcat.append(result.logcat + "\n");
+//                return;
+//            }
+//            result = Tools.runShell(cmd_verify);
+//            if (0 == result.state) {
+//                jtLogcat.append("apksigner verify成功 \n");
+//                jtLogcat.append(result.logcat + "\n");
+//            } else {
+//                jtLogcat.append(result.logcat + "\n");
+//                return;
+//            }
+//            //删除对齐文件
+//            Tools.deleteFile(zipalign_apk);
+//            //删除V3文件
+//            Tools.deleteFile(signer_apk + ".idsig");
 
         });
         gbaglayout.setConstraints(jbSign, constraints);
@@ -379,12 +393,89 @@ public class Sign extends JFrame {
         this.add(jspane);
         constraints.gridwidth = 1;
 
+        this.setTitle("apk resign");
         this.setSize(400, 600);
 //        this.pack();
 //        this.setBounds(100, 100, 400, 600); //设置容器大小
         this.setVisible(true);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
+    }
+
+    /**
+     * 同步执行
+     *
+     * @param cmd_zipalign
+     * @param cmd_signer
+     * @param cmd_verify
+     * @param zipalign_apk
+     * @param signer_apk
+     */
+    private void onExecCmd(String cmd_zipalign, String cmd_signer, String cmd_verify, String zipalign_apk, String signer_apk) {
+        ExecResult result = Tools.runShell(cmd_zipalign);
+        if (0 == result.code) {
+            jtLogcat.append("zipalign 对齐成功 \n");
+        } else {
+            jtLogcat.append(result.logcat + "\n");
+            return;
+        }
+        result = Tools.runShell(cmd_signer);
+        if (0 == result.code) {
+            jtLogcat.append("apksigner sign成功 \n");
+        } else {
+            jtLogcat.append(result.logcat + "\n");
+            return;
+        }
+        result = Tools.runShell(cmd_verify);
+        if (0 == result.code) {
+            jtLogcat.append("apksigner verify成功 \n");
+            jtLogcat.append(result.logcat + "\n");
+        } else {
+            jtLogcat.append(result.logcat + "\n");
+            return;
+        }
+        //删除对齐文件
+        Tools.deleteFile(zipalign_apk);
+        //删除V3文件
+        Tools.deleteFile(signer_apk + ".idsig");
+    }
+
+    /**
+     * 异步执行
+     *
+     * @param cmd_zipalign
+     * @param cmd_signer
+     * @param cmd_verify
+     * @param zipalign_apk
+     * @param signer_apk
+     */
+    private void onExecCmdAsync(String cmd_zipalign, String cmd_signer, String cmd_verify, String zipalign_apk, String signer_apk) {
+        Tools.runShellAsync(cmd_zipalign, result1 -> {
+            if (result1.state) {
+                jtLogcat.append("zipalign 对齐成功 \n");
+                Tools.runShellAsync(cmd_signer, result2 -> {
+                    if (result2.state) {
+                        jtLogcat.append("apksigner sign成功 \n");
+                        Tools.runShellAsync(cmd_verify, result3 -> {
+                            if (result3.state) {
+                                jtLogcat.append("apksigner verify成功 \n");
+                                jtLogcat.append(result3.logcat + "\n");
+                                //删除对齐文件
+                                Tools.deleteFile(zipalign_apk);
+                                //删除V3文件
+                                Tools.deleteFile(signer_apk + ".idsig");
+                            } else {
+                                jtLogcat.append(result3.logcat + "\n");
+                            }
+                        });
+                    } else {
+                        jtLogcat.append(result2.logcat + "\n");
+                    }
+                });
+            } else {
+                jtLogcat.append(result1.logcat + "\n");
+            }
+        });
     }
 
 }

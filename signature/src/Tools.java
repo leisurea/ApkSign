@@ -6,6 +6,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.util.concurrent.TimeUnit;
 
 public class Tools {
 
@@ -84,8 +85,8 @@ public class Tools {
         try {
             Process p = Runtime.getRuntime().exec(shell);
             int exitValue = p.waitFor();
-            result.state = exitValue;
-            sb.append("===result :").append(exitValue).append("\n");
+            result.code = exitValue;
+            sb.append("===result state:").append(exitValue).append("\n");
             System.out.println(shell + " Process exitValue:" + exitValue);
 
             BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
@@ -104,6 +105,45 @@ public class Tools {
         }
         result.logcat = sb.toString();
         return result;
+    }
+
+    public static void runShellAsync(String shell, ExecCallback callback) {
+        ExecResult result = new ExecResult();
+        result.state = false;
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(shell).append("\n");
+
+        try {
+            Process process = Runtime.getRuntime().exec(shell);
+//            new InputStreamRunnable(process.getErrorStream(), "Error",sb).start();
+            new InputStreamRunnable(process.getInputStream(), "Info", sb, call -> {
+                try {
+                    boolean exitValue = process.waitFor(30, TimeUnit.MINUTES);
+
+                    result.state = exitValue;
+                    sb.append("===result state:").append(exitValue).append("\n");
+                    System.out.println(shell + " Process exitValue:" + exitValue);
+                    process.destroy();
+
+                } catch (InterruptedException exception) {
+                    sb.append(exception.getMessage()).append("\n");
+                    exception.printStackTrace();
+                }
+                if (null != callback) {
+                    result.logcat = sb.toString();
+                    callback.onExecFinish(result);
+                }
+            }).start();
+
+        } catch (IOException e) {
+            sb.append(e.getMessage()).append("\n");
+            e.printStackTrace();
+            if (null != callback) {
+                result.logcat = sb.toString();
+                callback.onExecFinish(result);
+            }
+        }
     }
 
     public static boolean isEmpty(String text) {
