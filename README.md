@@ -1,4 +1,4 @@
 # ApkSign
 用apksigner重签名apk
 
-![image](https://github.com/leisurea/ApkSign/signature/img/cover.png)
+![image](https://github.com/leisurea/ApkSign/blob/master/signature/img/cover.png)
