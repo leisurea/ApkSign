@@ -88,7 +88,7 @@ public class Sign extends JFrame {
         this.add(tf1);
         constraints.weightx = 1; //layout_weight缩放权重
         apksignerT = new JTextField("");
-        apksignerT.setText("/Users/leisure/Library/Android/sdk/build-tools/30.0.2/");
+        apksignerT.setText(Tools.isWindows() ? "C:\\Users\\xxx\\AppData\\Local\\Android\\Sdk\\build-tools\\30.0.2\\" : "/Users/xxx/Library/Android/sdk/build-tools/30.0.2/");
         gbaglayout.setConstraints(apksignerT, constraints);
         this.add(apksignerT);
         constraints.weightx = 0.0; //恢复默认值
@@ -158,12 +158,27 @@ public class Sign extends JFrame {
         gbaglayout.setConstraints(tf3, constraints);
         this.add(tf3);
         constraints.weightx = 1; //layout_weight缩放权重
-        constraints.gridwidth = GridBagConstraints.REMAINDER; //结束行
+//        constraints.gridwidth = GridBagConstraints.REMAINDER; //结束行
         JComboBox signApkPath = new JComboBox(signList.stream().map(a -> a.signApk).toArray());
         signApkPath.setEditable(true);
         signApkPath.setSelectedIndex(-1);//默认不选
         gbaglayout.setConstraints(signApkPath, constraints);
         this.add(signApkPath);
+        constraints.weightx = 0.0; //恢复默认值
+        constraints.gridwidth = GridBagConstraints.REMAINDER; //结束行
+        JButton signApkB = new JButton("选择");
+        signApkB.addActionListener(e -> {
+            fc.setCurrentDirectory(new File("."));//默认为当前文件夹
+            fc.setDialogTitle("apk输出路径");
+            fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            //打开文件选择器，现成阻塞，直到选择框被关闭
+            if (fc.showOpenDialog(signApkB) == JFileChooser.APPROVE_OPTION) {
+                String csv = fc.getSelectedFile().getAbsolutePath();
+                ((JTextComponent) signApkPath.getEditor().getEditorComponent()).setText(csv);
+            }
+        });
+        gbaglayout.setConstraints(signApkB, constraints);
+        this.add(signApkB);
 
         constraints.gridwidth = 1; //重新设置gridwidth的值
         constraints.weightx = 0.0; //恢复默认值
@@ -171,7 +186,7 @@ public class Sign extends JFrame {
         gbaglayout.setConstraints(tf4, constraints);
         this.add(tf4);
         constraints.weightx = 1; //layout_weight缩放权重
-        constraints.gridwidth = GridBagConstraints.REMAINDER; //结束行
+//        constraints.gridwidth = GridBagConstraints.REMAINDER; //结束行
         JComboBox jksPath = new JComboBox(signList.stream().map(a -> a.jks).toArray());
         jksPath.setEditable(true);
         jksPath.setSelectedIndex(-1);
@@ -195,6 +210,32 @@ public class Sign extends JFrame {
             }
         });
         this.add(jksPath);
+        constraints.weightx = 0.0; //恢复默认值
+        constraints.gridwidth = GridBagConstraints.REMAINDER; //结束行
+        JButton jksPathB = new JButton("选择");
+        jksPathB.addActionListener(e -> {
+            fc.setCurrentDirectory(new File("."));//默认为当前文件夹
+            fc.setDialogTitle("jks签名文件路径");
+            fc.setFileFilter(new FileFilter() {
+                @Override
+                public boolean accept(File f) {
+                    return f.getName().endsWith(".jks") || f.isDirectory();
+                }
+
+                @Override
+                public String getDescription() {
+                    return null;
+                }
+            });
+            fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+            //打开文件选择器，现成阻塞，直到选择框被关闭
+            if (fc.showOpenDialog(jksPathB) == JFileChooser.APPROVE_OPTION) {
+                String csv = fc.getSelectedFile().getAbsolutePath();
+                ((JTextComponent) jksPath.getEditor().getEditorComponent()).setText(csv);
+            }
+        });
+        gbaglayout.setConstraints(jksPathB, constraints);
+        this.add(jksPathB);
 
         constraints.gridwidth = 1; //重新设置gridwidth的值
         constraints.weightx = 0.0; //恢复默认值
@@ -325,9 +366,9 @@ public class Sign extends JFrame {
             cmd_zipalign = apksignerPath + "zipalign -p -f -v 4 " + unSignApkPath + " " + zipalign_apk;
 //            #确认对齐结果命令，按需使用(操作或验证成功后会看到 Verification succesful)
 //            # cmd += apksignerPath + 'zipalign -c -v 4 '+zipalign_apk +'\n '
-            cmd_signer = apksignerPath + "apksigner sign --ks " + jks + " --ks-pass pass:" + alikeyPas + " --ks-key-alias " + alikey + " --key-pass pass:" + keyPas + " --v2-signing-enabled true -v --out " + signer_apk + " " + zipalign_apk;
+            cmd_signer = apksignerPath + Tools.getApksigner() + " sign --ks " + jks + " --ks-pass pass:" + alikeyPas + " --ks-key-alias " + alikey + " --key-pass pass:" + keyPas + " --v2-signing-enabled true -v --out " + signer_apk + " " + zipalign_apk;
             //校验签名
-            String cmd_verify = apksignerPath + "apksigner verify -v --print-certs " + signer_apk;
+            String cmd_verify = apksignerPath + Tools.getApksigner() + " verify -v --print-certs " + signer_apk;
 //            #不推荐jarsigner
 
 //            jtLogcat.append(Tools.exec(cmd_zipalign, cmd_signer));

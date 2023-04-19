@@ -127,6 +127,7 @@ public class Tools {
                     process.destroy();
 
                 } catch (InterruptedException exception) {
+                    result.state = false;
                     sb.append(exception.getMessage()).append("\n");
                     exception.printStackTrace();
                 }
@@ -179,4 +180,16 @@ public class Tools {
     }
 
 
+    /**
+     * windows下需要.bat后缀，但命令行里不用
+     *
+     * @return
+     */
+    public static String getApksigner() {
+        return isWindows() ? "apksigner.bat" : "apksigner";
+    }
+
+    public static boolean isWindows() {
+        return System.getProperty("os.name").toLowerCase().startsWith("win");
+    }
 }
