@@ -65,6 +65,7 @@ public class Tools {
         File f = new File(path);
         if (f.exists()) {
             boolean d = f.delete();
+//            System.out.println("delete file path "+path+" result="+d);
         }
     }
 

@@ -1,17 +1,1 @@
-[
-    {
-        "signApk": "/Users/zhangsan/desktop/",
-        "jks": "/Users/zhangsan/desktop/abc.jks",
-        "alikeys":"abc",
-        "keyStorePas":"abcdefg",
-        "alikeysPas":"abcdefg"
-    },
-    {
-        "signApk": "C:\\User\\output",
-        "jks": "C:\\User\\aaa.jks",
-        "alikeys":"alikeys",
-        "keyStorePas":"08DAHGHKJHJUGBGYHJJVHVHVNVNV",
-        "alikeysPas":"DRFTVG7FYBJBJ9XRCVHFGCHGMIOOQ"
-    }
-
-]
+[{"alikeys":"abc","alikeysPas":"abcdefg","jks":"/Users/zhangsan/desktop/abc.jks","keyStorePas":"abcdefg","signApk":"/Users/zhangsan/desktop/"},{"alikeys":"alikeys","alikeysPas":"DRFTVG7FYBJBJ9XRCVHFGCHGMIOOQ","jks":"C:\\User\\aaa.jks","keyStorePas":"08DAHGHKJHJUGBGYHJJVHVHVNVNV","signApk":"C:\\User\\output"},{"alikeys":"zyf","alikeysPas":"easypay1024","jks":"/Users/leisure/SVN_SOURCE2020/AS_SAAS/app/keystore/zyf.jks","keyStorePas":"easypay1024","signApk":"/Users/leisure/Desktop"}]

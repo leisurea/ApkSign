@@ -3,6 +3,11 @@ import com.alibaba.fastjson2.JSON;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.dnd.DnDConstants;
+import java.awt.dnd.DropTarget;
+import java.awt.dnd.DropTargetAdapter;
+import java.awt.dnd.DropTargetDropEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.io.File;
@@ -23,7 +28,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.filechooser.FileFilter;
-import javax.swing.filechooser.FileSystemView;
 import javax.swing.text.JTextComponent;
 
 public class Sign extends JFrame {
@@ -32,6 +36,7 @@ public class Sign extends JFrame {
     private List<SignBean> signList = null;
     private JTextField apksignerT;
     private JTextField unSignApkT;
+    private JComboBox jksPath;
     private JTextField keyStorePas;
     private JTextField alikeys;
     private JTextField alikeysPas;
@@ -65,9 +70,6 @@ public class Sign extends JFrame {
 
     public Sign() {
 
-//        System.out.println(directory.getCanonicalPath());
-//        System.out.println(directory.getAbsolutePath());
-
         signList = readProfitFile();
 
         GridBagLayout gbaglayout = new GridBagLayout(); //创建GridBagLayout布局管理器
@@ -89,6 +91,7 @@ public class Sign extends JFrame {
         constraints.weightx = 1; //layout_weight缩放权重
         apksignerT = new JTextField("");
         apksignerT.setText(Tools.isWindows() ? "C:\\Users\\xxx\\AppData\\Local\\Android\\Sdk\\build-tools\\30.0.2\\" : "/Users/xxx/Library/Android/sdk/build-tools/30.0.2/");
+        apksignerT.setText(apksignerT.getText().replaceAll("xxx", System.getProperty("user.name")));
         gbaglayout.setConstraints(apksignerT, constraints);
         this.add(apksignerT);
         constraints.weightx = 0.0; //恢复默认值
@@ -187,7 +190,7 @@ public class Sign extends JFrame {
         this.add(tf4);
         constraints.weightx = 1; //layout_weight缩放权重
 //        constraints.gridwidth = GridBagConstraints.REMAINDER; //结束行
-        JComboBox jksPath = new JComboBox(signList.stream().map(a -> a.jks).toArray());
+        jksPath = new JComboBox(signList.stream().map(a -> a.jks).toArray());
         jksPath.setEditable(true);
         jksPath.setSelectedIndex(-1);
         gbaglayout.setConstraints(jksPath, constraints);
@@ -321,6 +324,9 @@ public class Sign extends JFrame {
                 JOptionPane.showMessageDialog(null, "未签名apk路径为空");
                 return;
             }
+            if (unSignApkPath.startsWith("file:")) {//拖拽文件会有前缀
+                unSignApkPath = unSignApkPath.substring("file:".length());
+            }
             String preFix = Tools.getPrefixName(unSignApkPath);
             String sufFix = Tools.getSuffixName(unSignApkPath);
             if (Tools.isEmpty(preFix) || Tools.isEmpty(sufFix)) {
@@ -357,9 +363,8 @@ public class Sign extends JFrame {
 
             String target_apk = signedApkPath + File.separator + sufFix;
             String zipalign_apk = output_dir + preFix + "_zipalign" + sufFix;
-            String signer_apk = output_dir + preFix + "_signer" + sufFix;
+            String signer_apk = output_dir + preFix + "_signed" + sufFix;
 
-//            System.getProperty("os.name")
             String cmd_zipalign = "";
             String cmd_signer = "";
 //            # 拼装签名命令-如果您使用的是 apksigner，则必须在为 APK 文件签名之前使用 zipalign。如果您在使用 apksigner 为 APK 签名之后对 APK 做出了进一步更改，签名便会失效。
@@ -371,39 +376,10 @@ public class Sign extends JFrame {
             String cmd_verify = apksignerPath + Tools.getApksigner() + " verify -v --print-certs " + signer_apk;
 //            #不推荐jarsigner
 
-//            jtLogcat.append(Tools.exec(cmd_zipalign, cmd_signer));
-
 
             //MacOS可以同步执行，win执行卡死
 //            onExecCmd(cmd_zipalign, cmd_signer, cmd_verify, zipalign_apk, signer_apk);
             onExecCmdAsync(cmd_zipalign, cmd_signer, cmd_verify, zipalign_apk, signer_apk);
-
-//            ExecResult result = Tools.runShell(cmd_zipalign);
-//            if (0 == result.state) {
-//                jtLogcat.append("zipalign 对齐成功 \n");
-//            } else {
-//                jtLogcat.append(result.logcat + "\n");
-//                return;
-//            }
-//            result = Tools.runShell(cmd_signer);
-//            if (0 == result.state) {
-//                jtLogcat.append("apksigner sign成功 \n");
-//            } else {
-//                jtLogcat.append(result.logcat + "\n");
-//                return;
-//            }
-//            result = Tools.runShell(cmd_verify);
-//            if (0 == result.state) {
-//                jtLogcat.append("apksigner verify成功 \n");
-//                jtLogcat.append(result.logcat + "\n");
-//            } else {
-//                jtLogcat.append(result.logcat + "\n");
-//                return;
-//            }
-//            //删除对齐文件
-//            Tools.deleteFile(zipalign_apk);
-//            //删除V3文件
-//            Tools.deleteFile(signer_apk + ".idsig");
 
         });
         gbaglayout.setConstraints(jbSign, constraints);
@@ -441,6 +417,9 @@ public class Sign extends JFrame {
         this.setVisible(true);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
+        //拖拽文件进来输入框
+        onDrag(unSignApkT, ".apk");
+        onDrag((JTextComponent) jksPath.getEditor().getEditorComponent(), ".jks");
     }
 
     /**
@@ -519,4 +498,68 @@ public class Sign extends JFrame {
         });
     }
 
+    /**
+     * 拖拽文件
+     *
+     * @param jTextField
+     * @param suffix
+     */
+    public void onDrag(JTextComponent jTextField, String suffix) {
+        new DropTarget(jTextField, DnDConstants.ACTION_COPY_OR_MOVE, new DropTargetAdapter() {
+            @Override
+            public void drop(DropTargetDropEvent dtde) {
+                try {
+                    if (dtde.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+                        dtde.acceptDrop(DnDConstants.ACTION_COPY_OR_MOVE);
+                        List<File> list = (List<File>) (dtde.getTransferable().getTransferData(DataFlavor.javaFileListFlavor));
+                        if (null != list && !list.isEmpty()) {
+                            for (File file : list) {
+                                if (file.getName().endsWith(suffix)) {
+                                    jTextField.setText(file.getAbsolutePath());
+                                }
+                            }
+                        }
+
+//                        String temp = "";
+//                        for (File file : list) {
+//                            temp += file.getAbsolutePath() + ";\n";
+//                            JOptionPane.showMessageDialog(null, temp);
+//                            dtde.dropComplete(true);
+//                        }
+                        dtde.dropComplete(true);
+                    } else {
+                        dtde.rejectDrop();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+    @Deprecated
+    public void drag1() {
+        new DropTarget(this, DnDConstants.ACTION_COPY_OR_MOVE, new DropTargetAdapter() {
+            @Override
+            public void drop(DropTargetDropEvent dtde) {
+                try {
+                    if (dtde.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+                        dtde.acceptDrop(DnDConstants.ACTION_COPY_OR_MOVE);
+                        List<File> list = (List<File>) (dtde.getTransferable().getTransferData(DataFlavor.javaFileListFlavor));
+
+                        String temp = "";
+                        for (File file : list) {
+                            temp += file.getAbsolutePath() + ";\n";
+                            JOptionPane.showMessageDialog(null, temp);
+                            dtde.dropComplete(true);
+                        }
+                    } else {
+                        dtde.rejectDrop();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
 }
